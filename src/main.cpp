@@ -24,7 +24,7 @@
 #define fireBtn 4
 
 // Defines led control
-LedControl lc=LedControl(12,11,10,1);
+LedControl lc= LedControl(12,11,10,1);
 
 // Player variables
 uint8_t playerPos = 0b00111000;
@@ -39,6 +39,7 @@ float buttonDelay = 200;
 void MoveLeft();
 void MoveRight();
 void Fire();
+void PrintPlayerPos();
 
 void setup() {
     Serial.begin(9600);
@@ -67,39 +68,59 @@ void loop() {
     if (millis() - buttonPressedTime > buttonDelay){
         if (!digitalRead(leftBtn)){
             buttonPressedTime = millis();
-            Serial.println("Moving left");
             MoveLeft();
-            lc.setColumn(0, 0, playerPos);
         }
 
         if (!digitalRead(rightBtn)){
             buttonPressedTime = millis();
-            Serial.println("Moving right");
             MoveRight();
-            lc.setColumn(0, 0, playerPos);
+ 
         }
     }
 
     if (!digitalRead(fireBtn)){
         Fire();
     }
-
-    Serial.println(playerPos);
 }
 
 // Functions
 void MoveLeft(){
-    if (playerPos < 0b11100000){
+    if (playerPos <= 0b11100000 && playerPos != 0b11000000){
         playerPos = playerPos << 1; // shifts player pos by one bit
+
+        // makes bit come back if it went of of the edge
+        if (playerPos == 0b110){
+            playerPos = 0b111;
+        }
+ 
+        lc.setColumn(0, 0, playerPos);
+        PrintPlayerPos();
     }
 }
 
 void MoveRight(){
-    if (playerPos > 0b00000111){
+    if (playerPos >= 0b00000111){
         playerPos = playerPos >> 1; // shifts player pos by one bit
+
+       // makes bit come back if it went of of the edge
+        if (playerPos == 0b01100000){
+            playerPos = 0b11100000;
+        }
+
+        lc.setColumn(0, 0, playerPos);
+        PrintPlayerPos();
     }
 }
 
 void Fire(){
-    
+    // Find the starting point of the bullet
+
+}
+
+void PrintPlayerPos(){
+    Serial.print("Pos is ");
+    Serial.print(playerPos, BIN);
+    Serial.print("(");
+    Serial.print(playerPos);
+    Serial.println(")");
 }
