@@ -33,8 +33,7 @@ int8_t playerLeft = 2;
 uint8_t playerCenter = 3; 
 int8_t playerRight = 4;
 
-
-// Projectile projectiles
+// Projectiles
 bool projSpawned = false;
 uint8_t projRow = 1; // row the bullet is currently in (starts at 1)
 uint8_t projXB;  // projectile x coord (binary value that represents horizontal position)
@@ -103,8 +102,6 @@ void loop() {
     if (projSpawned && (millis() - projLastUpdate) > projUpdateDelay){
         UpdateProjectilePos();
     }
-
-
 }
 
 // Functions
