@@ -1,6 +1,8 @@
 #include "LedControl.h"
 
 /*
+    Bottom left of matrix is (0,0), increases up and to the right
+
     Pins
     ----------
     12 - DIN
@@ -27,7 +29,19 @@
 LedControl lc= LedControl(12,11,10,1);
 
 // Player variables
-uint8_t playerPos = 0b00111000;
+int8_t playerLeft = 2;
+uint8_t playerCenter = 3; 
+int8_t playerRight = 4;
+
+
+// Projectile projectiles
+bool projSpawned = false;
+uint8_t projRow = 1; // row the bullet is currently in (starts at 1)
+uint8_t projXB;  // projectile x coord (binary value that represents horizontal position)
+uint8_t projX; // cartesian coordinate
+uint8_t projY; // cartesian coordinate
+unsigned long projLastUpdate; // time of last projectile update
+int projUpdateDelay = 100; // delay between projectile updates (ms)
 
 // Keeps track of time when a button was released to add a delay
 unsigned long buttonPressedTime = 0;
@@ -38,7 +52,10 @@ float buttonDelay = 200;
 // Function Prototypes
 void MoveLeft();
 void MoveRight();
+void UpdatePlayerPos();
+void ResetPlayerLeds();
 void Fire();
+void UpdateProjectilePos();
 void PrintPlayerPos();
 
 void setup() {
@@ -59,13 +76,12 @@ void setup() {
     lc.clearDisplay(0);
 
     // Sets initial position
-    lc.setColumn(0, 0, playerPos);
-
+    UpdatePlayerPos();
 }
 
 void loop() { 
     // Movement input is only checked if more than 500ms has passed since last input
-    if (millis() - buttonPressedTime > buttonDelay){
+    if ((millis() - buttonPressedTime) > buttonDelay){
         if (!digitalRead(leftBtn)){
             buttonPressedTime = millis();
             MoveLeft();
@@ -76,51 +92,87 @@ void loop() {
             MoveRight();
  
         }
+
+        // Fire should have its own delay separate from the movement buttons
+        if (!digitalRead(fireBtn)){
+            buttonPressedTime = millis();
+            Fire();
+        }
     }
 
-    if (!digitalRead(fireBtn)){
-        Fire();
+    if (projSpawned && (millis() - projLastUpdate) > projUpdateDelay){
+        UpdateProjectilePos();
     }
+
+
 }
 
 // Functions
 void MoveLeft(){
-    if (playerPos <= 0b11100000 && playerPos != 0b11000000){
-        playerPos = playerPos << 1; // shifts player pos by one bit
-
-        // makes bit come back if it went of of the edge
-        if (playerPos == 0b110){
-            playerPos = 0b111;
-        }
- 
-        lc.setColumn(0, 0, playerPos);
-        PrintPlayerPos();
+    if (playerLeft > -1){
+        ResetPlayerLeds();
+        playerLeft--;
+        playerCenter--;
+        playerRight--;
+        UpdatePlayerPos();
     }
 }
 
 void MoveRight(){
-    if (playerPos >= 0b00000111){
-        playerPos = playerPos >> 1; // shifts player pos by one bit
-
-       // makes bit come back if it went of of the edge
-        if (playerPos == 0b01100000){
-            playerPos = 0b11100000;
-        }
-
-        lc.setColumn(0, 0, playerPos);
-        PrintPlayerPos();
+    if (playerRight < 8){
+        ResetPlayerLeds();
+        playerLeft++;
+        playerCenter++;
+        playerRight++;
+        UpdatePlayerPos();
     }
 }
 
 void Fire(){
     // Find the starting point of the bullet
+    if (projSpawned == false){
+        projSpawned = true;
+        projLastUpdate = millis();
 
+        projX = playerCenter;
+        projXB  = (int)(pow(2, playerCenter)+0.5); // 0.5 added to account for rounding down
+        projY = 1;
+
+        Serial.print("Spawning proj at ");
+        Serial.print(projX);
+        Serial.print(" ,");
+        Serial.println(projY);
+
+        lc.setLed(0, projX, projY, true); 
+    }
 }
 
-void PrintPlayerPos(){
-    Serial.print("Pos is ");
-    Serial.print(playerPos, BIN);
-    Serial.print("(");
-    Serial.print(playerPos);
-    Serial.println(")");
+void UpdateProjectilePos(){
+    // y = 8 is just above the top row
+    if (projY < 8){
+        projLastUpdate = millis(); // updates last update time for delay
+
+        lc.setLed(0, projX, projY, false); // removes light at previous location *** change this to toggle the individual light
+        
+        // increments y
+        projY++;
+        lc.setLed(0, projX, projY, true); 
+    }else{
+        // Proj spawned being false allows us to spawn another 
+        projSpawned = false;
+    }
+}
+
+// Resets player LEDs
+void ResetPlayerLeds(){
+    lc.setLed(0, playerLeft, 0, false);
+    lc.setLed(0, playerCenter, 0, false);
+    lc.setLed(0, playerRight, 0, false);
+}
+
+// Updates player pos to current player position
+void UpdatePlayerPos(){
+    lc.setLed(0, playerLeft, 0, true);
+    lc.setLed(0, playerCenter, 0, true);
+    lc.setLed(0, playerRight, 0, true);
 }
