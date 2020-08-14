@@ -20,7 +20,6 @@
 #define CS 10
 
 // Buttons
-
 #define rightBtn 7
 #define leftBtn 8
 #define fireBtn 4
@@ -29,6 +28,7 @@
 LedControl lc= LedControl(12,11,10,1);
 
 // Player variables
+uint16_t score;
 int8_t playerLeft = 2;
 uint8_t playerCenter = 3; 
 int8_t playerRight = 4;
@@ -51,7 +51,6 @@ bool movingRight = true; //keeps track of aliens direction
 unsigned long alienLastUpdate; // time when last alien update occured
 uint16_t alienUpdateDelay = 500; // delay between alien updates (ms)
 
-
 // Keeps track of time when a button was released to add a delay
 unsigned long buttonPressedTime = 0;
 
@@ -65,7 +64,7 @@ void UpdatePlayerPos();
 void ResetPlayerLeds();
 void Fire();
 void UpdateProjectilePos();
-void CheckCollision();
+void CheckCollision(                                                                                                                                                                                                                         );
 void PrintPlayerPos();
 
 void SpawnAlien();
@@ -174,11 +173,9 @@ void Fire(){
 // Checks for collision between projectile and alien
 void CheckCollision(){
     if (projY == alienY && (projX == alienLeft || projX == alienRight)){
-        ResetAlienLeds();
-        alienLeft = -1;
-        alienRight = 0;
-        movingRight = true;
+        ResetAlienLeds(); // turns off all alien leds
         alienSpawned = false;
+        score++;
     }
 }
 
