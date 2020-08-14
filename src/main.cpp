@@ -40,7 +40,17 @@ uint8_t projXB;  // projectile x coord (binary value that represents horizontal 
 uint8_t projX; // cartesian coordinate
 uint8_t projY; // cartesian coordinate
 unsigned long projLastUpdate; // time of last projectile update
-int projUpdateDelay = 100; // delay between projectile updates (ms)
+unsigned int projUpdateDelay = 30; // delay between projectile updates (ms)
+
+// Alient Variables
+bool alienSpawned = false;
+int8_t alienLeft;
+int8_t alienRight;
+uint8_t alienY;
+bool movingRight = true; //keeps track of aliens direction
+unsigned long alienLastUpdate; // time when last alien update occured
+uint8_t alienUpdateDelay = 200; // delay between alien updates (ms)
+
 
 // Keeps track of time when a button was released to add a delay
 unsigned long buttonPressedTime = 0;
@@ -55,7 +65,13 @@ void UpdatePlayerPos();
 void ResetPlayerLeds();
 void Fire();
 void UpdateProjectilePos();
+void CheckCollision();
 void PrintPlayerPos();
+
+void SpawnAlien();
+void MoveAlien();
+void UpdateAlienPos();
+void ResetAlienLeds();
 
 void setup() {
     Serial.begin(9600);
@@ -76,6 +92,8 @@ void setup() {
 
     // Sets initial position
     UpdatePlayerPos();
+
+    SpawnAlien();
 }
 
 void loop() { 
@@ -89,7 +107,6 @@ void loop() {
         if (!digitalRead(rightBtn)){
             buttonPressedTime = millis();
             MoveRight();
- 
         }
 
         // Fire should have its own delay separate from the movement buttons
@@ -101,6 +118,10 @@ void loop() {
 
     if (projSpawned && (millis() - projLastUpdate) > projUpdateDelay){
         UpdateProjectilePos();
+    }
+
+    if (alienSpawned && (millis() - alienLastUpdate) > alienUpdateDelay){
+        MoveAlien();
     }
 }
 
@@ -135,12 +156,20 @@ void Fire(){
         projXB  = (int)(pow(2, playerCenter)+0.5); // 0.5 added to account for rounding down
         projY = 1;
 
-        Serial.print("Spawning proj at ");
-        Serial.print(projX);
-        Serial.print(" ,");
-        Serial.println(projY);
+        // Serial.print("Spawning proj at ");
+        // Serial.print(projX);
+        // Serial.print(" ,");
+        // Serial.println(projY);
 
         lc.setLed(0, projX, projY, true); 
+    }
+}
+
+// Checks for collision between projectile and alien
+void CheckCollision(){
+    if (projY == alienY && (projX == alienLeft || projX == alienRight)){
+        ResetAlienLeds();
+        alienSpawned = false;
     }
 }
 
@@ -153,7 +182,8 @@ void UpdateProjectilePos(){
         
         // increments y
         projY++;
-        lc.setLed(0, projX, projY, true); 
+        lc.setLed(0, projX, projY, true);
+        CheckCollision(); 
     }else{
         // Proj spawned being false allows us to spawn another 
         projSpawned = false;
@@ -172,4 +202,54 @@ void UpdatePlayerPos(){
     lc.setLed(0, playerLeft, 0, true);
     lc.setLed(0, playerCenter, 0, true);
     lc.setLed(0, playerRight, 0, true);
+}
+
+void SpawnAlien(){
+    // sets start pos of alien
+    alienSpawned = true;
+
+    alienLeft = -1;
+    alienRight = 0;
+    alienY = 7;
+
+    UpdateAlienPos();
+}
+
+void MoveAlien(){
+    alienLastUpdate = millis();
+    if (movingRight){
+        ResetAlienLeds();
+        alienLeft++;
+        alienRight++;
+        UpdateAlienPos();  
+
+        if (alienRight < 8){
+            UpdateAlienPos();   
+        }else{
+            // If we reach the end start moving left
+            movingRight = false;
+        }
+    }else{
+        ResetAlienLeds();
+        alienLeft--;
+        alienRight--;
+        UpdateAlienPos();
+
+        if (alienRight > 0){
+            UpdateAlienPos();   
+        }else{
+            // If we reach the end start moving left
+            movingRight = true;
+        }  
+    }
+}
+
+void ResetAlienLeds(){
+    lc.setLed(0, alienLeft, alienY, false);
+    lc.setLed(0, alienRight, alienY, false);
+}
+
+void UpdateAlienPos(){
+    lc.setLed(0, alienLeft, alienY, true);
+    lc.setLed(0, alienRight, alienY, true);
 }
