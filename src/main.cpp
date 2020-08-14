@@ -49,7 +49,7 @@ int8_t alienRight;
 uint8_t alienY;
 bool movingRight = true; //keeps track of aliens direction
 unsigned long alienLastUpdate; // time when last alien update occured
-uint8_t alienUpdateDelay = 200; // delay between alien updates (ms)
+uint16_t alienUpdateDelay = 500; // delay between alien updates (ms)
 
 
 // Keeps track of time when a button was released to add a delay
@@ -123,6 +123,12 @@ void loop() {
     if (alienSpawned && (millis() - alienLastUpdate) > alienUpdateDelay){
         MoveAlien();
     }
+
+    if (!alienSpawned){
+        if (random(0,50000) <= 1){
+            SpawnAlien();
+        }
+    }
 }
 
 // Functions
@@ -169,6 +175,9 @@ void Fire(){
 void CheckCollision(){
     if (projY == alienY && (projX == alienLeft || projX == alienRight)){
         ResetAlienLeds();
+        alienLeft = -1;
+        alienRight = 0;
+        movingRight = true;
         alienSpawned = false;
     }
 }
@@ -206,12 +215,19 @@ void UpdatePlayerPos(){
 
 void SpawnAlien(){
     // sets start pos of alien
+    if (random(0,3) == 1){
+        alienLeft = -1;
+        alienRight = 0;
+        alienY = 7;
+        movingRight = true;
+    }else{
+        alienLeft = 8;
+        alienRight = 9;
+        alienY = 7;
+        movingRight = false;
+    }
+
     alienSpawned = true;
-
-    alienLeft = -1;
-    alienRight = 0;
-    alienY = 7;
-
     UpdateAlienPos();
 }
 
